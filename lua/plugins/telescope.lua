@@ -98,12 +98,12 @@ return {
 					require("telescope.builtin").help_tags({ results_title = "Help Results" })
 				end,
 			},
-			{
-				"<leader>ff",
-				function()
-					require("telescope.builtin").find_files()
-				end,
-			},
+			-- {
+			-- 	"<leader>ff",
+			-- 	function()
+			-- 		require("telescope.builtin").find_files()
+			-- 	end,
+			-- },
 		},
 	},
 }

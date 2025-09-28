@@ -32,9 +32,9 @@ return {
 				},
 			})
 
-			-- Configure mason to auto install servers
+			-- Ensure Angular language server is installed via Mason
 			require("mason-lspconfig").setup({
-				automatic_installation = { exclude = { "ocamllsp", "gleam" } },
+				ensure_installed = { "angularls" },
 			})
 
 			-- Override tsserver diagnostics to filter out specific messages
@@ -74,6 +74,24 @@ return {
 				cssls = {},
 				gleam = {},
 				graphql = {},
+				-- Angular Language Server
+				angularls = {
+					-- Start with stdio; we will inject probe locations per project root
+					cmd = { "ngserver", "--stdio" },
+					filetypes = { "typescript", "html", "typescriptreact", "typescript.tsx" },
+					root_dir = require("lspconfig.util").root_pattern("angular.json", "nx.json", "project.json"),
+					on_new_config = function(new_config, new_root_dir)
+						-- Help Angular LS find workspace TypeScript and Angular packages
+						new_config.cmd = {
+							"ngserver",
+							"--stdio",
+							"--tsProbeLocations",
+							new_root_dir,
+							"--ngProbeLocations",
+							new_root_dir,
+						}
+					end,
+				},
 				html = {},
 				jsonls = {},
 				lua_ls = {
@@ -91,7 +109,35 @@ return {
 				solidity = {},
 				sqlls = {},
 				tailwindcss = {
-					-- filetypes = { "reason" },
+					-- Limit where Tailwind LS attaches to projects that actually have config
+					root_dir = require("lspconfig.util").root_pattern(
+						"tailwind.config.js",
+						"tailwind.config.cjs",
+						"tailwind.config.mjs",
+						"tailwind.config.ts",
+						"postcss.config.js",
+						"postcss.config.cjs",
+						"postcss.config.mjs",
+						"package.json"
+					),
+					settings = {
+						tailwindCSS = {
+							files = {
+								exclude = {
+									"**/node_modules/**",
+									"**/.git/**",
+									"**/dist/**",
+									"**/build/**",
+									"**/coverage/**",
+									"**/test/**",
+									"**/tests/**",
+									"**/fixtures/**",
+								},
+							},
+						},
+					},
+					-- Suppress noisy Node experimental warnings from this server only
+					cmd_env = { NODE_NO_WARNINGS = "1" },
 				},
 				ts_ls = {
 					settings = {
@@ -108,10 +154,14 @@ return {
 				},
 				yamlls = {},
 				apex_ls = {
-					apex_jar_path = vim.fn.expand("~/kane/apex-jorje-lsp.jar"),
+					cmd = { "java", "-jar", vim.fn.expand("~/.local/share/nvim/mason/packages/apex-language-server/extension/dist/apex-jorje-lsp.jar") },
+					apex_jar_path = vim.fn.expand("~/.local/share/nvim/mason/packages/apex-language-server/extension/dist/apex-jorje-lsp.jar"),
 					filetypes = { "cls", "trigger", "apex" },
 					apex_enable_semantic_errors = false,
 					apex_enable_completion_statistics = false,
+				},
+				omnisharp = {
+					cmd = { "omnisharp" },
 				},
 			}
 
@@ -126,9 +176,41 @@ return {
 			local default_capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
 
 			---@diagnostic disable-next-line: unused-local
-			local on_attach = function(_client, buffer_number)
+			local on_attach = function(client, buffer_number)
 				-- Pass the current buffer to map lsp keybinds
 				map_lsp_keybinds(buffer_number)
+
+				-- Show initialization notifications for omnisharp
+				if client.name == "omnisharp" then
+					Snacks.notify("OmniSharp: Initializing C# language server...", {
+						title = "LSP",
+						icon = "󰌗",
+					})
+
+					-- Check when omnisharp is ready by monitoring server capabilities
+					local timer = vim.loop.new_timer()
+					local check_count = 0
+					timer:start(1000, 1000, vim.schedule_wrap(function()
+						check_count = check_count + 1
+						if client.server_capabilities and client.server_capabilities.completionProvider then
+							timer:stop()
+							timer:close()
+							Snacks.notify("OmniSharp: C# IntelliSense ready!", {
+								title = "LSP",
+								icon = "󰌗",
+								level = "info",
+							})
+						elseif check_count > 60 then -- Stop checking after 60 seconds
+							timer:stop()
+							timer:close()
+							Snacks.notify("OmniSharp: Initialization timeout", {
+								title = "LSP",
+								icon = "󰌗",
+								level = "warn",
+							})
+						end
+					end))
+				end
 
 				-- Create a command `:Format` local to the LSP buffer
 				vim.api.nvim_buf_create_user_command(buffer_number, "Format", function(_)
@@ -143,13 +225,16 @@ return {
 
 			-- Iterate over our servers and set them up
 			for name, config in pairs(servers) do
-				require("lspconfig")[name].setup({
+				vim.lsp.config[name] = {
 					capabilities = default_capabilities,
+					cmd = config.cmd,
 					filetypes = config.filetypes,
 					handlers = vim.tbl_deep_extend("force", {}, default_handlers, config.handlers or {}),
 					on_attach = on_attach,
 					settings = config.settings,
-				})
+					root_dir = config.root_dir,
+					on_new_config = config.on_new_config,
+				}
 			end
 
 			-- Congifure LSP linting, formatting, diagnostics, and code actions

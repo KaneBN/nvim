@@ -3,8 +3,6 @@ local vnoremap = require("user.keymap_utils").vnoremap
 local inoremap = require("user.keymap_utils").inoremap
 local tnoremap = require("user.keymap_utils").tnoremap
 local xnoremap = require("user.keymap_utils").xnoremap
-local harpoon_ui = require("harpoon.ui")
-local harpoon_mark = require("harpoon.mark")
 local illuminate = require("illuminate")
 local utils = require("user.utils")
 local terminal = require("user.terminal")
@@ -17,7 +15,10 @@ end
 
 -- lazyterm
 map("n", "<leader>ft", function()
-	terminal.open()
+	terminal.open({
+		backdrop = 100,
+		transparent = true
+	})
 end, { desc = "Terminal (cwd)" })
 
 map("n", "<c-_>", function()
@@ -43,31 +44,31 @@ map("n", "<leader>gg", function()
 	terminal({ "lazygit" }, { esc_esc = false, ctrl_hjkl = false })
 end, { desc = "Lazygit (cwd)" })
 
+-- lazysf
+map("n", "<leader>sf", function()
+	terminal({ "lazysf" }, { esc_esc = false, ctrl_hjkl = false })
+end, { desc = "Lazysf (cwd)" })
+
 -- Press gx to open the link under the cursor
 map("n", "gx", ":sil !open <cWORD><cr>", { silent = true })
 
 -- FML!
 map("n", "<leader>gf", "<cmd>CellularAutomaton make_it_rain<CR>")
 
--- Telescope
-map("n", "<leader>sf", function()
-	require("telescope.builtin").find_files({ hidden = true })
-end, { desc = "[S]earch [F]iles" })
-
 -- SalesForce keybinds
-map(
-	"n",
-	"<leader>dd",
-	"<C-w>s<C-w>j10<C-w>-:term sfdx force:source:deploy -p '%' -l NoTestRun -w 5<CR>",
-	{ desc = "Deploy source to Org (SFDX)" }
-)
-
 -- map(
 -- 	"n",
 -- 	"<leader>dd",
--- 	"<C-w>s<C-w>j10<C-w>-:term sf project deploy start -c <CR>",
+-- 	"<C-w>s<C-w>j10<C-w>-:term sfdx force:source:deploy -p '%' -l NoTestRun -w 5<CR>",
 -- 	{ desc = "Deploy source to Org (SFDX)" }
 -- )
+
+map(
+	"n",
+	"<leader>dd",
+	"<C-w>s<C-w>j10<C-w>-:term sf project deploy start -c <CR>",
+	{ desc = "Deploy source to Org (SFDX)" }
+)
 
 map(
 	"n",
@@ -78,8 +79,15 @@ map(
 
 map(
 	"n",
+	"<leader>lc",
+	":lua require('keybinder.custom').ansi_colorize()<CR>",
+	{ desc = "List Active Debug Logs for authenticated org" }
+)
+
+map(
+	"n",
 	"<leader>ll",
-	":enew | set ft=log | read !sf apex list log <CR> | :set filetype=log<CR> :7 <CR> | :lua require('keybinder.custom').set_hotkeys()<CR>",
+	":lua require('keybinder.custom').list_apex_logs()<CR>",
 	{ desc = "List Active Debug Logs for authenticated org" }
 )
 
@@ -134,7 +142,7 @@ map(
 map(
 	"n",
 	"<leader>[w",
-	":term sf lightning generate component --name  --type lwc --output-dir ~/repos/booknow/repo/BookNow-Software-Dev-Org/force-app/main/default/lwc <S-Left><S-Left><S-Left><S-Left><LEFT>",
+	":term sf lightning generate component --name  --type lwc --output-dir ~/repos/booknow/repo/bn-workspace/BookNow-Software-Dev-Org/force-app/main/default/lwc <S-Left><S-Left><S-Left><S-Left><LEFT>",
 	{ desc = "Create LWC" }
 )
 
@@ -285,48 +293,6 @@ nnoremap("gx", ":sil !open <cWORD><cr>", { silent = true })
 -- TSC autocommand keybind to run TypeScripts tsc
 nnoremap("<leader>tc", ":TSC<cr>", { desc = "[T]ypeScript [C]ompile" })
 
--- Harpoon keybinds --
--- Open harpoon ui
-nnoremap("<leader>ho", function()
-	harpoon_ui.toggle_quick_menu()
-end)
-
--- Add current file to harpoon
-nnoremap("<leader>ha", function()
-	harpoon_mark.add_file()
-end)
-
--- Remove current file from harpoon
-nnoremap("<leader>hr", function()
-	harpoon_mark.rm_file()
-end)
-
--- Remove all files from harpoon
-nnoremap("<leader>hc", function()
-	harpoon_mark.clear_all()
-end)
-
--- Quickly jump to harpooned files
-nnoremap("<leader>1", function()
-	harpoon_ui.nav_file(1)
-end)
-
-nnoremap("<leader>2", function()
-	harpoon_ui.nav_file(2)
-end)
-
-nnoremap("<leader>3", function()
-	harpoon_ui.nav_file(3)
-end)
-
-nnoremap("<leader>4", function()
-	harpoon_ui.nav_file(4)
-end)
-
-nnoremap("<leader>5", function()
-	harpoon_ui.nav_file(5)
-end)
-
 -- Git keymaps --
 nnoremap("<leader>gb", ":Gitsigns toggle_current_line_blame<cr>")
 nnoremap("<leader>gf", function()
@@ -352,12 +318,12 @@ end, { desc = "Search [G]it [F]iles" })
 -- Telescope keybinds --
 nnoremap("<leader>?", require("telescope.builtin").oldfiles, { desc = "[?] Find recently opened files" })
 nnoremap("<leader>sb", require("telescope.builtin").buffers, { desc = "[S]earch Open [B]uffers" })
-nnoremap("<leader>sf", function()
-	require("telescope.builtin").find_files({ hidden = true })
-end, { desc = "[S]earch [F]iles" })
+-- nnoremap("<leader>sf", function()
+-- 	require("telescope.builtin").find_files({ hidden = true })
+-- end, { desc = "[S]earch [F]iles" })
 nnoremap("<leader>sh", require("telescope.builtin").help_tags, { desc = "[S]earch [H]elp" })
-nnoremap("<leader>sw", require("telescope.builtin").grep_string, { desc = "[S]earch current [W]ord" })
-nnoremap("<leader>sg", require("telescope.builtin").live_grep, { desc = "[S]earch by [G]rep" })
+--nnoremap("<leader>sw", require("telescope.builtin").grep_string, { desc = "[S]earch current [W]ord" })
+--nnoremap("<leader>sg", require("telescope.builtin").live_grep, { desc = "[S]earch by [G]rep" })
 nnoremap("<leader>sd", require("telescope.builtin").diagnostics, { desc = "[S]earch [D]iagnostics" })
 nnoremap("<leader>sd", require("telescope.builtin").git_files, { desc = "[S]earch [D]iagnostics" })
 nnoremap("<leader>cm", require("telescope.builtin").registers, { desc = "[C]heck [M]y registers" })
@@ -478,5 +444,29 @@ tnoremap("<space>", "<space>")
 -- Move selected text up/down in visual mode
 map("v", "J", ":m '>+1<CR>gv=gv")
 map("v", "K", ":m '>-2<CR>gv=gv")
+
+
+vim.keymap.set('n', '<leader>js', function()
+	local line_num = vim.api.nvim_win_get_cursor(0)[1]
+	local current_line = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, false)[1]
+
+	-- Look for System.debug with a string followed by a variable
+	-- This improved pattern correctly identifies the parts to transform
+	local modified_line = current_line:gsub(
+		"(System%.debug%(['\"](.-)['\"]%s*%+%s*)([^J][^S][^O][^N][^%.].-)(%))",
+		function(prefix, message, variable)
+			-- Check if variable is already wrapped with JSON.serialize
+			if variable:match("^JSON%.serialize%(.-%)$") then
+				return prefix .. variable .. ")"
+			else
+				return prefix .. "JSON.serialize(" .. variable .. "))"
+			end
+		end
+	)
+  
+	vim.api.nvim_buf_set_lines(0, line_num - 1, line_num, false, {modified_line})
+end, {desc = "Wrap variable with JSON.serialize in System.debug"})
+
+
 
 return M

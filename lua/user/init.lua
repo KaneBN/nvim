@@ -1,5 +1,6 @@
 require("user.options")
 require("user.lazy")
+require("user.terminal_highlights").setup()
 require("user.keymaps")
 require("user.highlight_yank")
 require("user.format_on_save")
