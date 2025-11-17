@@ -37,6 +37,15 @@ return {
 				ensure_installed = { "angularls" },
 			})
 
+			-- Auto-install apex-language-server if not present
+			-- (apex_ls is not supported by mason-lspconfig's ensure_installed)
+			local mason_registry = require("mason-registry")
+			if not mason_registry.is_installed("apex-language-server") then
+				vim.notify("Installing apex-language-server...", vim.log.levels.INFO)
+				local apex_pkg = mason_registry.get_package("apex-language-server")
+				apex_pkg:install()
+			end
+
 			-- Override tsserver diagnostics to filter out specific messages
 			local messages_to_filter = {
 				"This may be converted to an async function.",
@@ -154,9 +163,14 @@ return {
 				},
 				yamlls = {},
 				apex_ls = {
-					cmd = { "java", "-jar", vim.fn.expand("~/.local/share/nvim/mason/packages/apex-language-server/extension/dist/apex-jorje-lsp.jar") },
-					apex_jar_path = vim.fn.expand("~/.local/share/nvim/mason/packages/apex-language-server/extension/dist/apex-jorje-lsp.jar"),
-					filetypes = { "cls", "trigger", "apex" },
+					cmd = {
+					"java",
+					"-jar",
+					vim.fn.stdpath("data") .. "/mason/packages/apex-language-server/extension/dist/apex-jorje-lsp.jar",
+				},
+					apex_jar_path = vim.fn.stdpath("data")
+					.. "/mason/packages/apex-language-server/extension/dist/apex-jorje-lsp.jar",
+					filetypes = { "apex" },
 					apex_enable_semantic_errors = false,
 					apex_enable_completion_statistics = false,
 				},
@@ -235,6 +249,8 @@ return {
 					root_dir = config.root_dir,
 					on_new_config = config.on_new_config,
 				}
+				-- Enable the LSP server
+				vim.lsp.enable(name)
 			end
 
 			-- Congifure LSP linting, formatting, diagnostics, and code actions

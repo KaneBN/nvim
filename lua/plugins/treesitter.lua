@@ -13,6 +13,7 @@ return {
 			---@diagnostic disable: missing-fields
 			require("nvim-treesitter.configs").setup({
 				ensure_installed = {
+					"apex",
 					"bash",
 					"c",
 					"c_sharp",
